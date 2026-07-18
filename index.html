@@ -119,6 +119,42 @@
     max-width: 92%;
     margin: clamp(28px, 4.4vh, 48px) 0 0;
   }
+  .hero-linkedin {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    margin-top: clamp(18px, 2.6vh, 26px);
+    padding: 9px 17px;
+    border: 1px solid var(--mag, #d6006c);
+    border-radius: 999px;
+    background: var(--mag, #d6006c);
+    box-shadow: 0 5px 16px rgba(214, 0, 108, 0.12);
+    color: #ffffff;
+    font-family: 'Archivo', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .hero-linkedin .external-arrow {
+    font-size: 14px;
+    line-height: 0;
+    transform: translateY(-1px);
+  }
+  .hero-linkedin:hover {
+    background: #b80059;
+    border-color: #b80059;
+    box-shadow: 0 7px 20px rgba(184, 0, 89, 0.18);
+    transform: translateY(-1px);
+  }
+  .hero-linkedin:focus-visible {
+    outline: 3px solid rgba(214, 0, 108, 0.24);
+    outline-offset: 3px;
+  }
 
   /* ── Research-terminal chrome (peripheral, low key) ─────────────── */
   .chrome .edge {
@@ -194,11 +230,13 @@
   @media (max-width: 560px) {
     .name { white-space: normal; }
     .degree { white-space: normal; }
+    .hero-linkedin { min-height: 36px; margin-top: 18px; padding: 8px 15px; font-size: 10px; }
     .tr .clock-utc, .br { display: none; }
     .scroll-hint { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .dot, .chev { animation: none; }
+    .hero-linkedin { transition: none; }
   }
 </style>
 </head>
@@ -250,6 +288,9 @@
               <p class="degree">B.B.A. (Honours) in Applied Economics · Hong Kong Baptist University</p>
             </div>
             <p class="focus">Empirical finance · applied econometrics · equity market, risk &amp; policy research</p>
+            <a class="hero-linkedin" href="https://www.linkedin.com/in/zhenyuanpan/" target="_blank" rel="noopener noreferrer" aria-label="View Zhenyuan Pan on LinkedIn">
+              <span>View my LinkedIn</span><span class="external-arrow" aria-hidden="true">&#8599;</span>
+            </a>
           </section>
           <div class="chrome">
             <div class="crop c1"></div><div class="crop c2"></div>
