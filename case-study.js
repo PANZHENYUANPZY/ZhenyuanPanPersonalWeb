@@ -22,10 +22,12 @@
   let textFly = null;                               // floating clone of the centre-node name during a text morph
   let activeId = "sifra", morphKind = "chart", activePaper = null;
   let isOpen = false, animating = false, savedScrollY = 0;
+  let researchTrigger = null;
   let startRect = null, flyStart = 0, flyDir = 1, trackId = 0, lastSlot = null;
 
   // ── content: case-study copy + data (objective voice, no first/second person) ──
   function caseData() {
+    if (window.__researchManuscripts && window.__researchManuscripts[activeId]) return { manuscript: true, morph: "plain", slug: activeId };
     if (activeId === "gaoke") return caseDataGaoke();
     if (activeId === "yinhua") return caseDataYinhua();
     if (activeId === "sinosafe") return caseDataSinosafe();
@@ -744,6 +746,7 @@
   function buildArticle() {
     const data = caseData();
     if (!data) return "";
+    if (data.manuscript && window.__manuscriptArticle) return window.__manuscriptArticle(data);
     if (data.yinhua) return buildYinhuaArticle(data);
     if (data.sinosafe) return buildSinosafeArticle(data);
     if (data.redsea && window.__redseaArticle) return window.__redseaArticle(data);
@@ -926,6 +929,8 @@
     scroller.__caCheck = check;
     wireWorkbookTabs();
     if (window.__redseaViz) window.__redseaViz.init(scroller);
+    if (window.__researchInteractions) window.__researchInteractions.init(scroller);
+    if (window.__researchReading) window.__researchReading.init(scroller);
     if (window.__ailaborViz) window.__ailaborViz.init(scroller);
     if (window.__socialCapitalViz) window.__socialCapitalViz.init(scroller);
     if (window.__aicycleViz) window.__aicycleViz.init(scroller);
@@ -1083,6 +1088,7 @@
 
   function open(id) {
     if (isOpen || animating) return;
+    researchTrigger = window.__researchPortfolio && window.__researchPortfolio.papers[id] ? document.activeElement : null;
     if (id) { activeId = id; morphKind = (caseData() || {}).morph || "chart"; }
     const S = (morphKind === "plain") ? null : sourceRect();
     if (morphKind !== "plain" && !S) return;
@@ -1129,6 +1135,9 @@
     // build the article + expand the frosted page from the same card rect
     overlay.classList.add("is-active");
     layer.innerHTML = buildArticle();
+    overlay.setAttribute("aria-hidden", "false");
+    if (window.__researchInteractions) window.__researchInteractions.prepare(layer, activeId);
+    if (window.__researchReading) window.__researchReading.prepare(layer, activeId);
     backdrop = overlay.querySelector(".case-backdrop");
     scroller = layer.querySelector(".case-scroll");
     slotEl = layer.querySelector("#case-figure-slot");
@@ -1181,10 +1190,12 @@
     setTimeout(function () { overlay.classList.add("is-shown"); animateArticle(); }, OPEN_MS * 0.32);
     setTimeout(function () { animating = false; }, OPEN_MS + 40);
     bindCloseHandlers();
+    if (researchTrigger) layer.querySelector(".case-close").focus({ preventScroll: true });
   }
 
   function close() {
     if (!isOpen || animating) return;
+    if (window.__researchReading) window.__researchReading.dispose();
     animating = true;
     if (scroller) scroller.scrollTop = 0;   // bring the figure back to its hero spot for a clean fly-back
     const S = sourceRect() || startRect;
@@ -1251,11 +1262,15 @@
       if (window.__workbook && window.__workbook.resume) window.__workbook.resume();
     }
     overlay.classList.remove("is-active", "is-open", "is-shown");
+    overlay.setAttribute("aria-hidden", "true");
+    layer.removeAttribute("role"); layer.removeAttribute("aria-modal"); layer.removeAttribute("aria-labelledby");
     if (layer) { layer.innerHTML = ""; layer.style.transition = ""; layer.style.clipPath = ""; layer.style.opacity = ""; layer.style.transform = ""; }
     document.body.style.overflow = "";
     window.__caseOpen = false;            // resume the scroll-morph
     if (window.__morphMeasure) window.__morphMeasure();
     isOpen = false; animating = false;
+    if (researchTrigger && researchTrigger.isConnected) researchTrigger.focus({ preventScroll: true });
+    researchTrigger = null;
   }
 
   function bindCloseHandlers() {
@@ -1270,7 +1285,15 @@
     layer = document.getElementById("case-layer");
     backdrop = overlay ? overlay.querySelector(".case-backdrop") : null;
   }
-  function onKey(e) { if (e.key === "Escape" && isOpen) close(); }
+  function onKey(e) {
+    if (e.key === "Escape" && isOpen) close();
+    if (e.key === "Tab" && isOpen && researchTrigger) {
+      const items = [...layer.querySelectorAll('button, a[href], input, select, [tabindex="0"]')].filter(n => n.getClientRects().length && !n.disabled);
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
 
   function wireTriggers() {
     // only the lead title (or its CTA) opens the case study, not the body copy
@@ -1283,8 +1306,8 @@
         open((blk ? blk.getAttribute("data-case-id") : null) || "sifra");
         return;
       }
-      const card = e.target.closest(".rx-card[data-case]");
-      if (card) { e.preventDefault(); open(card.getAttribute("data-case")); return; }
+      const card = e.target.closest(".rx-card[data-case], .vl-tile[data-case]");
+      if (card) { e.preventDefault(); card.focus({ preventScroll: true }); open(card.getAttribute("data-case")); return; }
       const tile = e.target.closest(".vl-tile[data-paper]");
       if (tile) { e.preventDefault(); activePaper = tile.getAttribute("data-paper"); open("paper"); return; }
       const sysrow = e.target.closest(".sys-row[data-sys]");
@@ -1294,6 +1317,9 @@
     });
     document.addEventListener("keydown", function (e) {
       if (e.key !== "Enter" && e.key !== " ") return;
+      if (isOpen || animating) return;
+      const card = e.target && e.target.closest && e.target.closest(".rx-card[data-case], .vl-tile[data-case]");
+      if (card) { e.preventDefault(); open(card.getAttribute("data-case")); return; }
       const tile = e.target && e.target.closest && e.target.closest(".vl-tile[data-paper]");
       if (tile) { e.preventDefault(); activePaper = tile.getAttribute("data-paper"); open("paper"); return; }
       const sysrow = e.target && e.target.closest && e.target.closest(".sys-row[data-sys]");

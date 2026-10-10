@@ -54,6 +54,7 @@
     var meta = META[slug] || { cat: "" };
     var sum = (window.__PAPER_SUMMARIES && window.__PAPER_SUMMARIES[slug]) || { title: slug, body: "" };
     var img = "papers/" + slug + "/cover.png";
+    if (slug === "bonds-stop-hedging-stocks" && window.__manuscriptArticle) return window.__manuscriptArticle({ slug: "jfi" });
     var pdf = "papers/" + slug + "/" + slug + ".pdf";
 
     var H = STYLE +
